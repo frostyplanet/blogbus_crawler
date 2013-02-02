@@ -7,6 +7,7 @@ from spider.extract import extract
 from os.path import abspath, dirname, join
 from operator import itemgetter
 from bs4 import BeautifulSoup
+import datetime
 
 PREFIX = join(dirname(abspath(__file__))) 
 
@@ -19,9 +20,17 @@ class blog_post (Handler):
 
     def get (self, _id):
         soup = BeautifulSoup (self.html)
+        header = soup.find ('div', {'class': 'postHeader'})
+
+        title = header.find ('h2').string
+        date = header.find ('span', {'class': 'date'}).string
+        date = date.encode ('utf-8').strip ().strip ('日期：')
+        dt = datetime.datetime.strptime (date, '%Y-%m-%d')
+        times = dt.strftime ('%Y/%m/%d 00:00:00')
+        category = header.find ('span', {'class': 'category'})
+
         body = soup.find ('div', {'class': 'postBody'})
         if body:
-            category = soup.find ('span', {'class': 'category'})
             if category:
                 category = category.find ('a')
                 if category:
@@ -29,7 +38,9 @@ class blog_post (Handler):
             body = str(body)
             if body.find ('html</a><br/><br/>') != -1 and body.find ('div class="relpost"') != -1:
                 body = extract ('html</a><br/><br/>', '<div class="relpost"', body)
-            self.posts.append ((_id, category, body))
+            elif body.find ('html</a><br/><br/>') != -1 and body.find ('div class="addfav"') != -1:
+                body = extract ('html</a><br/><br/>', 'div class="addfav"', body)
+            self.posts.append ((_id, title, times, category, body))
            
         
 @route('/')
@@ -58,18 +69,26 @@ class post_list (Handler):
                         self.indexes[link] = None
                         spider.put (link)
 
+template = unicode("""---
+title: %s
+date: %s
+categories: %s
+---
+""", 'utf-8')
+
 if __name__ == '__main__':
-    spider.put ("http://%s/index_1.html" % (site))
-#    spider.put ("http://frostyplanet.blogbus.com/c1566502/")
+#    spider.put ("http://%s/index_1.html" % (site))
+    spider.put ("http://frostyplanet.blogbus.com/c1566502/")
     spider.run (3, 5)
         
     if not os.path.exists (os.path.join (PREFIX, "output")):
         os.mkdir ("output")
-    for _id, category, html in blog_post.posts:
+    for _id, title, times, category, html in blog_post.posts:
         file_path = os.path.join (os.path.join (PREFIX, "output", str(category) + "_" + str(_id)))
+        content = template % (title, times, category) + unicode(html, 'utf-8')
         f = open (file_path, "w")
         try:
-            f.write (html)
+            f.write (content.encode ('utf-8'))
         finally:
             f.close ()
         print "wrote", file_path
