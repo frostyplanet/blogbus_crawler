@@ -36,10 +36,10 @@ class blog_post (Handler):
                 if category:
                     category = category.string
             body = str(body)
-            if body.find ('html</a><br/><br/>') != -1 and body.find ('div class="relpost"') != -1:
-                body = extract ('html</a><br/><br/>', '<div class="relpost"', body)
-            elif body.find ('html</a><br/><br/>') != -1 and body.find ('div class="addfav"') != -1:
-                body = extract ('html</a><br/><br/>', 'div class="addfav"', body)
+            if body.find ('html</a><br/><br/>\n</p>') != -1 and body.find ('div class="relpost"') != -1:
+                body = extract ('html</a><br/><br/>\n</p>', '<div class="relpost"', body)
+            elif body.find ('html</a><br/><br/>\n</p>') != -1 and body.find ('div class="addfav"') != -1:
+                body = extract ('html</a><br/><br/>\n</p>', '<div class="addfav"', body)
             self.posts.append ((_id, title, times, category, body))
            
         
@@ -77,9 +77,9 @@ categories: %s
 """, 'utf-8')
 
 if __name__ == '__main__':
-#    spider.put ("http://%s/index_1.html" % (site))
-    spider.put ("http://frostyplanet.blogbus.com/c1566502/")
-    spider.run (3, 5)
+    spider.put ("http://%s/index_1.html" % (site))
+#    spider.put ("http://frostyplanet.blogbus.com/c1566502/")
+    spider.run (5, 5)
         
     if not os.path.exists (os.path.join (PREFIX, "output")):
         os.mkdir ("output")
